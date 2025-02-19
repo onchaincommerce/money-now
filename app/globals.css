@@ -1,0 +1,132 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #030711;
+  --foreground: #e1e7ef;
+  --neon-blue: #00f3ff;
+  --neon-purple: #b537f2;
+  --cyber-green: #00ff9d;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0f1c;
+    --foreground: #e1e7ef;
+  }
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: 'Space Grotesk', Arial, sans-serif;
+  background: linear-gradient(
+    135deg,
+    rgba(10, 15, 28, 1) 0%,
+    rgba(18, 26, 46, 1) 100%
+  );
+  min-height: 100vh;
+}
+
+/* Futuristic animations */
+@keyframes glow {
+  0% { box-shadow: 0 0 5px var(--neon-blue), 0 0 10px var(--neon-blue), 0 0 15px var(--neon-blue); }
+  50% { box-shadow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue), 0 0 30px var(--neon-blue); }
+  100% { box-shadow: 0 0 5px var(--neon-blue), 0 0 10px var(--neon-blue), 0 0 15px var(--neon-blue); }
+}
+
+@keyframes borderGlow {
+  0% { border-color: var(--neon-blue); }
+  50% { border-color: var(--neon-purple); }
+  100% { border-color: var(--neon-blue); }
+}
+
+/* Custom classes */
+.cyber-panel {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(var(--neon-blue), 0.1);
+  border-radius: 1rem;
+  box-shadow: 
+    0 8px 32px 0 rgba(0, 0, 0, 0.37),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.cyber-input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid var(--neon-blue);
+  animation: borderGlow 4s infinite;
+  transition: all 0.3s ease;
+}
+
+.cyber-input:focus {
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 15px var(--neon-blue);
+}
+
+.cyber-button {
+  background: linear-gradient(
+    45deg,
+    var(--neon-blue),
+    var(--neon-purple)
+  );
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+  box-shadow: 
+    0 0 10px rgba(var(--neon-blue), 0.5),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  border: none;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.cyber-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: 0.5s;
+}
+
+.cyber-button:hover::before {
+  left: 100%;
+}
+
+.message-box {
+  animation: glow 2s infinite;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Add these new styles */
+.bg-grid-pattern {
+  background-image: linear-gradient(var(--neon-blue)/10 1px, transparent 1px),
+    linear-gradient(to right, var(--neon-blue)/10 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+.cyber-button-secondary {
+  background: transparent;
+  border: 2px solid var(--neon-blue);
+  color: var(--neon-blue);
+  text-shadow: 0 0 8px rgba(0, 243, 255, 0.5);
+  transition: all 0.3s ease;
+}
+
+.cyber-button-secondary:hover {
+  background: var(--neon-blue);
+  color: var(--background);
+}
