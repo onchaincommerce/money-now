@@ -32,9 +32,29 @@ interface TimelineEvent {
   };
 }
 
+interface Payment {
+  payment_id: string;
+  network: string;
+  transaction_id: string;
+  status: string;
+  detected_at: string;
+  value: {
+    local: {
+      amount: string;
+      currency: string;
+    };
+    crypto: {
+      amount: string;
+      currency: string;
+    };
+  };
+  payer_addresses: string[];
+}
+
 interface ChargeData {
   data: {
     timeline: TimelineEvent[];
+    payments: Payment[];
   };
 }
 
@@ -71,25 +91,19 @@ export default function App() {
       const rawData = await chargeResponse.json();
       console.log('Raw API response:', rawData);
 
-      if (!rawData.data?.timeline) {
+      if (!rawData.data?.payments) {
         throw new Error('Invalid charge data structure');
       }
 
       const chargeData = rawData as ChargeData;
-      console.log('Charge timeline:', chargeData.data.timeline);
-
-      // Find the payment event and get the payer's address
-      const paymentEvent = chargeData.data.timeline.find(event => 
-        event.status === 'PENDING' && event.payment
-      );
-
-      console.log('Payment event:', paymentEvent);
-
-      if (!paymentEvent?.payment?.transaction?.from) {
-        throw new Error('No payment transaction found for this charge');
+      
+      // Find the payment and get the payer's address
+      const payment = chargeData.data.payments[0];
+      if (!payment?.payer_addresses?.[0]) {
+        throw new Error('No payment found for this charge');
       }
 
-      const payerAddress = paymentEvent.payment.transaction.from;
+      const payerAddress = payment.payer_addresses[0];
       console.log('Payer address:', payerAddress);
 
       // Initialize provider and wallet
