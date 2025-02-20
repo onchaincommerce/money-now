@@ -17,6 +17,10 @@ import {
   EthBalance,
 } from '@coinbase/onchainkit/identity';
 import { CheckoutButton } from '@coinbase/onchainkit/checkout';
+import { ethers } from 'ethers';
+
+const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'; // USDC on Base
+const REFUND_AMOUNT = '1000000'; // 1 USDC (6 decimals)
 
 export default function App() {
   const [message, setMessage] = useState('');
@@ -32,23 +36,42 @@ export default function App() {
     setRefundData(null);
 
     try {
-      const response = await fetch('/api/refund', {
-        method: 'POST',
+      // Get charge details
+      const chargeResponse = await fetch(`https://api.commerce.coinbase.com/charges/${currentChargeId}`, {
         headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ chargeId: currentChargeId }),
+          'X-CC-Api-Key': process.env.NEXT_PUBLIC_COINBASE_COMMERCE_API_KEY!,
+        }
       });
+      const charge = await chargeResponse.json();
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to process refund');
+      // Get the USDC payment address
+      const payerAddress = charge.data.addresses.usdc;
+      if (!payerAddress) {
+        throw new Error('No USDC payment address found');
       }
 
-      setMessage(data.message || 'Refund processed successfully! 🎉');
-      setRefundData(data);
+      // Initialize provider and wallet
+      const provider = new ethers.JsonRpcProvider('https://mainnet.base.org');
+      const wallet = new ethers.Wallet(process.env.NEXT_PUBLIC_PRIVATE_KEY!, provider);
+      
+      // Create USDC contract instance
+      const usdcContract = new ethers.Contract(
+        USDC_ADDRESS,
+        ['function transfer(address to, uint256 amount) returns (bool)'],
+        wallet
+      );
+
+      // Send refund transaction
+      const tx = await usdcContract.transfer(payerAddress, REFUND_AMOUNT);
+      const receipt = await tx.wait();
+
+      setMessage('Refund sent successfully! 🎉');
+      setRefundData({
+        transactionHash: receipt.hash,
+        amount: '1 USDC'
+      });
     } catch (error) {
+      console.error('Refund error:', error);
       setMessage(error instanceof Error ? error.message : 'Failed to process refund');
     } finally {
       setIsLoading(false);
