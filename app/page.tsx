@@ -16,26 +16,6 @@ import {
   Identity,
   EthBalance,
 } from '@coinbase/onchainkit/identity';
-import ArrowSvg from './svg/ArrowSvg';
-import ImageSvg from './svg/Image';
-import OnchainkitSvg from './svg/OnchainKit';
-
-const components = [
-  {
-    name: 'Transaction',
-    url: 'https://onchainkit.xyz/transaction/transaction',
-  },
-  { name: 'Swap', url: 'https://onchainkit.xyz/swap/swap' },
-  { name: 'Checkout', url: 'https://onchainkit.xyz/checkout/checkout' },
-  { name: 'Wallet', url: 'https://onchainkit.xyz/wallet/wallet' },
-  { name: 'Identity', url: 'https://onchainkit.xyz/identity/identity' },
-];
-
-const templates = [
-  { name: 'NFT', url: 'https://github.com/coinbase/onchain-app-template' },
-  { name: 'Commerce', url: 'https://github.com/coinbase/onchain-commerce-template'},
-  { name: 'Fund', url: 'https://github.com/fakepixels/fund-component' },
-];
 
 export default function App() {
   const [orderCode, setOrderCode] = useState('');
@@ -44,8 +24,7 @@ export default function App() {
   const [currentChargeId, setCurrentChargeId] = useState<string | null>(null);
   const [currentStatus, setCurrentStatus] = useState<string | null>(null);
   const [showRefundForm, setShowRefundForm] = useState(false);
-  const [refundData, setRefundData] = useState<{ transactionHash?: string } | null>(null);
-  const [txStatus, setTxStatus] = useState<'idle' | 'pending' | 'confirmed'>('idle');
+  const [refundData, setRefundData] = useState<{ transactionHash?: string; amount?: string } | null>(null);
 
   const handleCheckoutStatus = (status: LifecycleStatus) => {
     const { statusName, statusData } = status;
@@ -70,7 +49,6 @@ export default function App() {
     setIsLoading(true);
     setMessage('');
     setRefundData(null);
-    setTxStatus('pending');
 
     try {
       const response = await fetch('/api/refund', {
@@ -89,10 +67,8 @@ export default function App() {
 
       setMessage(data.message || 'Refund processed successfully! 🎉');
       setRefundData(data);
-      setTxStatus('confirmed');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Failed to process refund');
-      setTxStatus('idle');
     } finally {
       setIsLoading(false);
     }
@@ -169,9 +145,9 @@ export default function App() {
                   productId="e5efeff0-ab86-4eae-8d5c-4906f69a4ca9"
                   onStatus={handleCheckoutStatus}
                 >
-                  <CheckoutButton className="cyber-button px-8 py-3 rounded-lg font-bold">
+                  <button className="cyber-button px-8 py-3 rounded-lg font-bold">
                     Start Trial - 1 USDC
-                  </CheckoutButton>
+                  </button>
                   <CheckoutStatus />
                 </Checkout>
               </div>
