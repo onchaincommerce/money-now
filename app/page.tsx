@@ -16,15 +16,13 @@ import {
   Identity,
   EthBalance,
 } from '@coinbase/onchainkit/identity';
+import { CheckoutButton } from '@coinbase/onchainkit/checkout';
 
 export default function App() {
-  const [orderCode, setOrderCode] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [currentChargeId, setCurrentChargeId] = useState<string | null>(null);
   const [currentStatus, setCurrentStatus] = useState<string | null>(null);
   const [showRefundForm, setShowRefundForm] = useState(false);
-  const [refundData, setRefundData] = useState<{ transactionHash?: string; amount?: string } | null>(null);
 
   const handleCheckoutStatus = (status: LifecycleStatus) => {
     const { statusName, statusData } = status;
@@ -40,43 +38,18 @@ export default function App() {
           setCurrentStatus('PENDING');
         }
         break;
-      // Handle other status cases if needed
-    }
-  };
-
-  const handleRefundRequest = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setMessage('');
-    setRefundData(null);
-
-    try {
-      const response = await fetch('/api/refund', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ chargeId: orderCode }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to process refund');
-      }
-
-      setMessage(data.message || 'Refund processed successfully! 🎉');
-      setRefundData(data);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to process refund');
-    } finally {
-      setIsLoading(false);
+      case 'error':
+        setMessage('Transaction failed. Please try again.');
+        break;
+      default:
+        // Handle init state
+        break;
     }
   };
 
   const handleCancelTrial = () => {
     setShowRefundForm(true);
-    setOrderCode(currentChargeId || '');
+    setMessage('To request a refund, please contact support with your transaction ID.');
   };
 
   return (
@@ -145,9 +118,7 @@ export default function App() {
                   productId="e5efeff0-ab86-4eae-8d5c-4906f69a4ca9"
                   onStatus={handleCheckoutStatus}
                 >
-                  <button className="cyber-button px-8 py-3 rounded-lg font-bold">
-                    Start Trial - 1 USDC
-                  </button>
+                  <CheckoutButton coinbaseBranded text="Start Trial - 1 USDC" />
                   <CheckoutStatus />
                 </Checkout>
               </div>
@@ -203,57 +174,20 @@ export default function App() {
                     Trial Cancellation
                   </h3>
                   <p className="text-[var(--foreground)]/80">
-                    Your refund will be processed immediately
+                    {message}
                   </p>
-                </div>
-
-                <form onSubmit={handleRefundRequest} className="space-y-6">
-                  <div>
-                    <label htmlFor="orderCode" className="block text-sm font-medium mb-2 text-[var(--neon-blue)]">
-                      Confirm Transaction ID
-                    </label>
-                    <input
-                      id="orderCode"
-                      type="text"
-                      value={orderCode}
-                      onChange={(e) => setOrderCode(e.target.value)}
-                      className="cyber-input w-full p-4 rounded-lg"
-                      readOnly
-                    />
+                  <div className="mt-4">
+                    <code className="block mt-1 bg-background/50 px-4 py-2 rounded border border-[var(--neon-blue)]/20">
+                      Transaction ID: {currentChargeId}
+                    </code>
                   </div>
                   <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="cyber-button w-full py-4 px-6 rounded-lg font-bold"
+                    onClick={() => setShowRefundForm(false)}
+                    className="mt-6 cyber-button px-6 py-2 rounded-lg font-bold"
                   >
-                    {isLoading ? '⚡ Processing...' : '⚡ Confirm Cancellation'}
+                    ← Back to Trial Details
                   </button>
-                </form>
-
-                {message && (
-                  <div className="message-box mt-6 p-6 text-center space-y-4">
-                    <div className="font-bold">{message}</div>
-                    {refundData?.transactionHash && (
-                      <div className="space-y-3">
-                        <div className="text-sm">
-                          <a 
-                            href={`https://basescan.org/tx/${refundData.transactionHash}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[var(--neon-blue)] hover:text-[var(--neon-purple)] transition-colors"
-                          >
-                            View Refund Transaction ↗
-                          </a>
-                        </div>
-                        {refundData.amount && (
-                          <div className="text-sm text-[var(--cyber-green)]">
-                            Amount: {refundData.amount} USDC
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
+                </div>
               </div>
             )}
           </section>
