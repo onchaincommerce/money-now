@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Checkout, CheckoutButton, CheckoutStatus, type LifecycleStatus } from '@coinbase/onchainkit/checkout';
+import { Checkout, CheckoutStatus, type LifecycleStatus } from '@coinbase/onchainkit/checkout';
 import {
   ConnectWallet,
   Wallet,
