@@ -36,43 +36,24 @@ export default function App() {
     setRefundData(null);
 
     try {
-      // Get charge details
-      const chargeResponse = await fetch(`https://api.commerce.coinbase.com/charges/${currentChargeId}`, {
+      const response = await fetch('/api/refund', {
+        method: 'POST',
         headers: {
-          'X-CC-Api-Key': process.env.NEXT_PUBLIC_COINBASE_COMMERCE_API_KEY!,
-        }
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ chargeId: currentChargeId }),
       });
-      const charge = await chargeResponse.json();
-      console.log('Charge data:', charge); // Debug log
 
-      // Get the payer's address
-      const payerAddress = charge.data.payer_addresses?.[0];
-      if (!payerAddress) {
-        throw new Error('No payer address found for this charge');
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to process refund');
       }
-      console.log('Payer address:', payerAddress); // Debug log
-
-      // Initialize provider and wallet
-      const provider = new ethers.JsonRpcProvider('https://mainnet.base.org');
-      const wallet = new ethers.Wallet(process.env.NEXT_PUBLIC_PRIVATE_KEY!, provider);
-      
-      // Create USDC contract instance
-      const usdcContract = new ethers.Contract(
-        USDC_ADDRESS,
-        ['function transfer(address to, uint256 amount) returns (bool)'],
-        wallet
-      );
-
-      // Send refund transaction
-      const tx = await usdcContract.transfer(payerAddress, REFUND_AMOUNT);
-      console.log('Transaction sent:', tx.hash); // Debug log
-      const receipt = await tx.wait();
-      console.log('Transaction confirmed:', receipt.hash); // Debug log
 
       setMessage('Refund sent successfully! 🎉');
       setRefundData({
-        transactionHash: receipt.hash,
-        amount: '1 USDC'
+        transactionHash: data.transactionHash,
+        amount: data.amount
       });
     } catch (error) {
       console.error('Refund error:', error);
