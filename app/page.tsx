@@ -21,18 +21,15 @@ import { ethers } from 'ethers';
 
 interface TimelineEvent {
   status: string;
-  payment?: {
-    transaction: {
-      addresses: {
-        usdc: string;
-      };
-    };
-  };
+  time: string;
 }
 
 interface ChargeData {
   data: {
     timeline: TimelineEvent[];
+    addresses: {
+      usdc: string;
+    };
   };
 }
 
@@ -56,22 +53,23 @@ export default function App() {
       // Get charge details
       const chargeResponse = await fetch(`https://api.commerce.coinbase.com/charges/${currentChargeId}`, {
         headers: {
-          'X-CC-Api-Key': process.env.COINBASE_COMMERCE_API_KEY!,
+          'X-CC-Api-Key': '3de7fd43-3bd8-460f-ba9a-fadef6988c41',
         }
       });
       const chargeData = await chargeResponse.json() as ChargeData;
       console.log('Charge data:', chargeData);
 
-      // Get the payer's address from the payment transaction
-      const paymentEvent = chargeData.data.timeline.find((event: TimelineEvent) => 
-        event.status === 'COMPLETED' && event.payment
-      );
-
-      if (!paymentEvent?.payment?.transaction?.addresses?.usdc) {
-        throw new Error('No USDC payment address found for this charge');
+      // Check if payment was made (PENDING status exists in timeline)
+      const hasPaid = chargeData.data.timeline.some(event => event.status === 'PENDING');
+      if (!hasPaid) {
+        throw new Error('No payment found for this charge');
       }
 
-      const payerAddress = paymentEvent.payment.transaction.addresses.usdc;
+      // Get the payer's address
+      const payerAddress = chargeData.data.addresses.usdc;
+      if (!payerAddress) {
+        throw new Error('No USDC address found for this charge');
+      }
       console.log('Payer address:', payerAddress);
 
       // Initialize provider and wallet
