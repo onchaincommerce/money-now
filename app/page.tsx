@@ -61,13 +61,27 @@ export default function App() {
           'X-CC-Api-Key': process.env.COINBASE_COMMERCE_API_KEY!,
         }
       });
-      const chargeData = await chargeResponse.json() as ChargeData;
-      console.log('Charge data:', chargeData);
+
+      if (!chargeResponse.ok) {
+        throw new Error(`Failed to fetch charge: ${chargeResponse.status}`);
+      }
+
+      const rawData = await chargeResponse.json();
+      console.log('Raw API response:', rawData);
+
+      if (!rawData.data?.timeline) {
+        throw new Error('Invalid charge data structure');
+      }
+
+      const chargeData = rawData as ChargeData;
+      console.log('Charge timeline:', chargeData.data.timeline);
 
       // Find the payment event and get the payer's address
       const paymentEvent = chargeData.data.timeline.find(event => 
         event.status === 'PENDING' && event.payment
       );
+
+      console.log('Payment event:', paymentEvent);
 
       if (!paymentEvent?.payment?.transaction?.from) {
         throw new Error('No payment transaction found for this charge');
