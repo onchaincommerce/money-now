@@ -23,6 +23,8 @@ export default function App() {
   const [currentChargeId, setCurrentChargeId] = useState<string | null>(null);
   const [currentStatus, setCurrentStatus] = useState<string | null>(null);
   const [showRefundForm, setShowRefundForm] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [refundData, setRefundData] = useState<{ transactionHash?: string; amount?: string } | null>(null);
 
   const handleCheckoutStatus = (status: LifecycleStatus) => {
     const { statusName, statusData } = status;
@@ -47,9 +49,37 @@ export default function App() {
     }
   };
 
+  const handleRefundRequest = async () => {
+    setIsLoading(true);
+    setMessage('');
+    setRefundData(null);
+
+    try {
+      const response = await fetch('/api/refund', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ chargeId: currentChargeId }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to process refund');
+      }
+
+      setMessage(data.message || 'Refund processed successfully! 🎉');
+      setRefundData(data);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Failed to process refund');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleCancelTrial = () => {
     setShowRefundForm(true);
-    setMessage('To request a refund, please contact support with your transaction ID.');
   };
 
   return (
@@ -174,19 +204,53 @@ export default function App() {
                     Trial Cancellation
                   </h3>
                   <p className="text-[var(--foreground)]/80">
-                    {message}
+                    Are you sure you want to cancel your trial and request a refund?
                   </p>
                   <div className="mt-4">
                     <code className="block mt-1 bg-background/50 px-4 py-2 rounded border border-[var(--neon-blue)]/20">
                       Transaction ID: {currentChargeId}
                     </code>
                   </div>
-                  <button
-                    onClick={() => setShowRefundForm(false)}
-                    className="mt-6 cyber-button px-6 py-2 rounded-lg font-bold"
-                  >
-                    ← Back to Trial Details
-                  </button>
+                  <div className="mt-6 space-y-4">
+                    <button
+                      onClick={handleRefundRequest}
+                      disabled={isLoading}
+                      className="w-full cyber-button px-6 py-3 rounded-lg font-bold"
+                    >
+                      {isLoading ? '⚡ Processing...' : '⚡ Confirm Cancellation & Refund'}
+                    </button>
+                    <button
+                      onClick={() => setShowRefundForm(false)}
+                      disabled={isLoading}
+                      className="w-full cyber-button-secondary px-6 py-3 rounded-lg font-bold"
+                    >
+                      ← Back to Trial Details
+                    </button>
+                  </div>
+                  {message && (
+                    <div className="message-box mt-6 p-6 text-center space-y-4">
+                      <div className="font-bold">{message}</div>
+                      {refundData?.transactionHash && (
+                        <div className="space-y-3">
+                          <div className="text-sm">
+                            <a 
+                              href={`https://basescan.org/tx/${refundData.transactionHash}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[var(--neon-blue)] hover:text-[var(--neon-purple)] transition-colors"
+                            >
+                              View Refund Transaction ↗
+                            </a>
+                          </div>
+                          {refundData.amount && (
+                            <div className="text-sm text-[var(--cyber-green)]">
+                              Amount: {refundData.amount} USDC
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
