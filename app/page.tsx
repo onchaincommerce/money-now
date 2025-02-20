@@ -36,24 +36,48 @@ export default function App() {
     setRefundData(null);
 
     try {
-      const response = await fetch('/api/refund', {
-        method: 'POST',
+      // Get charge details
+      const chargeResponse = await fetch(`https://api.commerce.coinbase.com/charges/${currentChargeId}`, {
         headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ chargeId: currentChargeId }),
+          'X-CC-Api-Key': process.env.COINBASE_COMMERCE_API_KEY!,
+        }
       });
+      const chargeData = await chargeResponse.json();
+      console.log('Charge data:', chargeData);
 
-      const data = await response.json();
+      // Get the payer's address from the payment transaction
+      const paymentEvent = chargeData.data.timeline.find((event: any) => 
+        event.status === 'COMPLETED' && event.payment
+      );
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to process refund');
+      if (!paymentEvent?.payment?.transaction?.addresses?.usdc) {
+        throw new Error('No USDC payment address found for this charge');
       }
+
+      const payerAddress = paymentEvent.payment.transaction.addresses.usdc;
+      console.log('Payer address:', payerAddress);
+
+      // Initialize provider and wallet
+      const provider = new ethers.JsonRpcProvider('https://mainnet.base.org');
+      const wallet = new ethers.Wallet(process.env.PRIVATE_KEY!, provider);
+      
+      // Create USDC contract instance
+      const usdcContract = new ethers.Contract(
+        USDC_ADDRESS,
+        ['function transfer(address to, uint256 amount) returns (bool)'],
+        wallet
+      );
+
+      // Send refund transaction
+      const tx = await usdcContract.transfer(payerAddress, REFUND_AMOUNT);
+      console.log('Transaction sent:', tx.hash);
+      const receipt = await tx.wait();
+      console.log('Transaction confirmed:', receipt.hash);
 
       setMessage('Refund sent successfully! 🎉');
       setRefundData({
-        transactionHash: data.transactionHash,
-        amount: data.amount
+        transactionHash: receipt.hash,
+        amount: '1 USDC'
       });
     } catch (error) {
       console.error('Refund error:', error);
