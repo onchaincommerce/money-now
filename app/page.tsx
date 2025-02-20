@@ -26,29 +26,6 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [refundData, setRefundData] = useState<{ transactionHash?: string; amount?: string } | null>(null);
 
-  const handleCheckoutStatus = (status: LifecycleStatus) => {
-    const { statusName, statusData } = status;
-    
-    switch (statusName) {
-      case 'success':
-        setCurrentChargeId(statusData.chargeId);
-        setCurrentStatus('COMPLETED');
-        break;
-      case 'pending':
-        if ('chargeId' in statusData) {
-          setCurrentChargeId(statusData.chargeId);
-          setCurrentStatus('PENDING');
-        }
-        break;
-      case 'error':
-        setMessage('Transaction failed. Please try again.');
-        break;
-      default:
-        // Handle init state
-        break;
-    }
-  };
-
   const handleRefundRequest = async () => {
     setIsLoading(true);
     setMessage('');
@@ -75,6 +52,29 @@ export default function App() {
       setMessage(error instanceof Error ? error.message : 'Failed to process refund');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleCheckoutStatus = (status: LifecycleStatus) => {
+    const { statusName, statusData } = status;
+    
+    switch (statusName) {
+      case 'success':
+        setCurrentChargeId(statusData.chargeId);
+        setCurrentStatus('COMPLETED');
+        break;
+      case 'pending':
+        if ('chargeId' in statusData) {
+          setCurrentChargeId(statusData.chargeId);
+          setCurrentStatus('PENDING');
+        }
+        break;
+      case 'error':
+        setMessage('Transaction failed. Please try again.');
+        break;
+      default:
+        // Handle init state
+        break;
     }
   };
 
