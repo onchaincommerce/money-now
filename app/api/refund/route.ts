@@ -7,49 +7,51 @@ const REFUND_AMOUNT = '1000000'; // 1 USDC (6 decimals)
 export async function POST(req: Request) {
   try {
     const { chargeId } = await req.json();
+    console.log('Processing refund for charge:', chargeId);
 
-    // First, get the charge details to find the payer's address
-    const chargeResponse = await fetch(`https://api.commerce.coinbase.com/charges/${chargeId}`, {
+    // Get charge details
+    const charge = await fetch(`https://api.commerce.coinbase.com/charges/${chargeId}`, {
       headers: {
         'X-CC-Api-Key': process.env.COINBASE_COMMERCE_API_KEY!,
-        'Accept': 'application/json',
       }
-    });
+    }).then(res => res.json());
 
-    const chargeData = await chargeResponse.json();
-    
-    if (!chargeResponse.ok) {
-      throw new Error('Failed to fetch charge details');
+    console.log('Charge data:', charge);
+
+    if (!charge.data?.timeline?.find((t: any) => t.status === 'COMPLETED')) {
+      throw new Error('Charge has not been paid');
     }
 
-    const payerAddress = chargeData.data.payer_addresses[0];
+    const payerAddress = charge.data.addresses.usdc;
     if (!payerAddress) {
-      throw new Error('No payer address found for this charge');
+      throw new Error('No USDC payer address found');
     }
 
-    // Initialize provider and wallet
+    console.log('Sending refund to:', payerAddress);
+
+    // Send refund
     const provider = new ethers.JsonRpcProvider('https://mainnet.base.org');
     const wallet = new ethers.Wallet(process.env.PRIVATE_KEY!, provider);
+    
+    const usdcContract = new ethers.Contract(
+      USDC_ADDRESS,
+      ['function transfer(address to, uint256 amount) returns (bool)'],
+      wallet
+    );
 
-    // USDC contract interface (minimal for transfer)
-    const usdcInterface = new ethers.Interface([
-      'function transfer(address to, uint256 amount) returns (bool)'
-    ]);
-
-    // Create contract instance
-    const usdcContract = new ethers.Contract(USDC_ADDRESS, usdcInterface, wallet);
-
-    // Send refund transaction
     const tx = await usdcContract.transfer(payerAddress, REFUND_AMOUNT);
-    await tx.wait();
+    console.log('Refund transaction sent:', tx.hash);
+    
+    const receipt = await tx.wait();
+    console.log('Refund confirmed:', receipt.hash);
 
     return NextResponse.json({
-      message: 'Refund processed successfully! 🎉',
-      transactionHash: tx.hash,
+      message: 'Refund sent successfully! 🎉',
+      transactionHash: receipt.hash,
       amount: '1 USDC'
     });
   } catch (error) {
-    console.error('Refund error:', error);
+    console.error('Refund failed:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to process refund' },
       { status: 500 }
