@@ -55,11 +55,13 @@ export default function App() {
     setRefundData(null);
 
     try {
-      // Get charge details
-      const chargeResponse = await fetch(`https://api.commerce.coinbase.com/charges/${currentChargeId}`, {
+      // Get charge details from our API endpoint
+      const chargeResponse = await fetch('/api/charge', {
+        method: 'POST',
         headers: {
-          'X-CC-Api-Key': process.env.COINBASE_COMMERCE_API_KEY!,
-        }
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ chargeId: currentChargeId }),
       });
 
       if (!chargeResponse.ok) {
