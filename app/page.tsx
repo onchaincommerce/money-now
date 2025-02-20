@@ -43,12 +43,14 @@ export default function App() {
         }
       });
       const charge = await chargeResponse.json();
+      console.log('Charge data:', charge); // Debug log
 
-      // Get the USDC payment address
-      const payerAddress = charge.data.addresses.usdc;
+      // Get the payer's address
+      const payerAddress = charge.data.payer_addresses?.[0];
       if (!payerAddress) {
-        throw new Error('No USDC payment address found');
+        throw new Error('No payer address found for this charge');
       }
+      console.log('Payer address:', payerAddress); // Debug log
 
       // Initialize provider and wallet
       const provider = new ethers.JsonRpcProvider('https://mainnet.base.org');
@@ -63,7 +65,9 @@ export default function App() {
 
       // Send refund transaction
       const tx = await usdcContract.transfer(payerAddress, REFUND_AMOUNT);
+      console.log('Transaction sent:', tx.hash); // Debug log
       const receipt = await tx.wait();
+      console.log('Transaction confirmed:', receipt.hash); // Debug log
 
       setMessage('Refund sent successfully! 🎉');
       setRefundData({
