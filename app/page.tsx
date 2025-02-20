@@ -19,6 +19,23 @@ import {
 import { CheckoutButton } from '@coinbase/onchainkit/checkout';
 import { ethers } from 'ethers';
 
+interface TimelineEvent {
+  status: string;
+  payment?: {
+    transaction: {
+      addresses: {
+        usdc: string;
+      };
+    };
+  };
+}
+
+interface ChargeData {
+  data: {
+    timeline: TimelineEvent[];
+  };
+}
+
 const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'; // USDC on Base
 const REFUND_AMOUNT = '1000000'; // 1 USDC (6 decimals)
 
@@ -42,11 +59,11 @@ export default function App() {
           'X-CC-Api-Key': process.env.COINBASE_COMMERCE_API_KEY!,
         }
       });
-      const chargeData = await chargeResponse.json();
+      const chargeData = await chargeResponse.json() as ChargeData;
       console.log('Charge data:', chargeData);
 
       // Get the payer's address from the payment transaction
-      const paymentEvent = chargeData.data.timeline.find((event: any) => 
+      const paymentEvent = chargeData.data.timeline.find((event: TimelineEvent) => 
         event.status === 'COMPLETED' && event.payment
       );
 
